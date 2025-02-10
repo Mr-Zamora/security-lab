@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfer Money</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Transfer Money</h1>
+        <div class="balance-info">
+            Current Balance: <span id="current-balance">Loading...</span>
+        </div>
+        <form id="transfer-form" action="/transfer" method="POST">
+            <div class="form-group">
+                <label for="to_user">Transfer To:</label>
+                <select name="to_user" id="to_user" required>
+                    <option value="admin">admin</option>
+                    <option value="user">user</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount ($):</label>
+                <input type="number" name="amount" id="amount" required min="1">
+            </div>
+            <button type="submit">Transfer</button>
+        </form>
+        <div id="result" class="message"></div>
+    </div>
+
+    <script>
+        // Fetch current balance
+        fetch('/balance')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('current-balance').textContent = 
+                    `$${data.balance} (${data.username})`;
+            })
+            .catch(error => {
+                document.getElementById('current-balance').textContent = 
+                    'Error loading balance';
+            });
+
+        // Handle form submission
+        document.getElementById('transfer-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch('/transfer', {
+                method: 'POST',
+                body: new FormData(this)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                document.getElementById('result').textContent = 
+                    `${data.message}. New balance: $${data.new_balance}`;
+                document.getElementById('current-balance').textContent = 
+                    `$${data.new_balance}`;
+            })
+            .catch(error => {
+                document.getElementById('result').textContent = 
+                    `Error: ${error.message}`;
+            });
+        });
+    </script>
+</body>
+</html>

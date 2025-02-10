@@ -1,0 +1,118 @@
+<h3><strong>1-Hour GitHub and Hosting Lesson Plan</strong></h3>
+<p>This lesson introduces students to GitHub, guides them through creating and publishing a simple number-guessing game, and teaches them how to host it live using GitHub Pages.</p>
+<hr />
+<h2><strong>Lesson Outline</strong></h2>
+<ol>
+    <li><strong>Introduction to GitHub (10 minutes)</strong></li>
+    <li><strong>Creating a Repository (10 minutes)</strong></li>
+    <li><strong>Building and Uploading a Number-Guessing Game (20 minutes)</strong></li>
+    <li><strong>Hosting on GitHub Pages (15 minutes)</strong></li>
+    <li><strong>Wrap-Up and Homework (5 minutes)</strong></li>
+</ol>
+<hr />
+<h2><strong>Lesson Details</strong></h2>
+<h3><strong>1. Introduction to GitHub (10 minutes)</strong></h3>
+<p><strong>Explain the basics:</strong></p>
+<ul>
+    <li>A platform for sharing and managing code online.</li>
+    <li>Tracks changes to your projects and helps with collaboration.</li>
+</ul>
+<p><strong>Show an example:</strong></p>
+<ul>
+    <li>Visit your profile (<a href="https://github.com/Mr-Zamora" target="_new"><span>Mr</span><span>. Zamora&rsquo;s</span><span> GitHub</span></a>) to demonstrate how repositories work.</li>
+</ul>
+<p><strong>Key terms:</strong></p>
+<ul>
+    <li>Repository: A folder for your project.</li>
+    <li>Commit: A saved change.</li>
+    <li>Push: Upload changes to GitHub.</li>
+    <li>Fork: Create a personal copy of a project.</li>
+</ul>
+<hr />
+<h3><strong>2. Creating a Repository (10 minutes)</strong></h3>
+<p><strong>Step-by-step instructions:</strong></p>
+<ol>
+    <li>Log in to GitHub.</li>
+    <li>Click the <strong>New Repository</strong> button.</li>
+    <li>Fill in:
+        <ul>
+            <li><strong>Repository Name:</strong> <code>my-first-repo</code>.</li>
+            <li><strong>Description:</strong> <code>A beginner-friendly repository with a number-guessing game.</code></li>
+        </ul>
+    </li>
+    <li>Click <strong>Create Repository</strong>.</li>
+</ol>
+<p><strong>Outcome:</strong> Students will see their first repository page with a <code>README.md</code> file.</p>
+<hr />
+<h3><strong>3. Building and Uploading a Number-Guessing Game (20 minutes)</strong></h3>
+<p><strong>Step 1: Copy the HTML Code</strong><br />Provide the following game code for students to copy:</p>
+<h4><strong><code>guess_number.py</code></strong></h4>
+<pre>
+# guess_number.py
+# A simple game for practising GitHub basics
+# Fork this repo, modify the game, and have fun!
+
+import random
+
+def guess_the_number():
+    """A simple number-guessing game."""
+    print("Welcome to the Guess the Number Game!")
+    print("I'm thinking of a number between 1 and 10. Can you guess it?")
+
+    number = random.randint(1, 10)  # Random number between 1 and 10
+    attempts = 0
+
+    while True:
+        try:
+            guess = int(input("Enter your guess: "))
+            attempts += 1
+
+            if guess < number:
+                print("Too low! Try again.")
+            elif guess > number:
+                print("Too high! Try again.")
+            else:
+                print(f"Congratulations! You guessed the number in {attempts} attempts.")
+                break
+        except ValueError:
+            print("Please enter a valid number.")
+
+# Run the game if this script is executed directly
+if __name__ == "__main__":
+    guess_the_number()
+</pre>
+<p><strong>Step 2: Upload the File to GitHub</strong></p>
+<ol>
+    <li>In the repository, click <strong>Add file</strong> &gt; <strong>Create new file</strong>.</li>
+    <li>Name the file <code>guess_number.py</code>.</li>
+    <li>Paste the code into the editor.</li>
+    <li>Add a commit message: <code>Added guess_number.py game</code>.</li>
+    <li>Click <strong>Commit new file</strong>.</li>
+</ol>
+<hr />
+<h3><strong>4. Hosting on GitHub Pages (15 minutes)</strong></h3>
+<p><strong>Step-by-step instructions:</strong></p>
+<ol>
+    <li>Go to the repository settings and scroll to the <strong>Pages</strong> section.</li>
+    <li>Under <strong>Source</strong>, select the branch with your file (usually <code>main</code>) and click <strong>Save</strong>.</li>
+    <li>GitHub will provide a URL (e.g., <code>https://mr-zamora.github.io/my-first-repo/</code>).</li>
+    <li>Test the URL to ensure the game is live.</li>
+</ol>
+<hr />
+<p><strong>Optional: Make <code>guess_number.html</code> the default page</strong></p>
+<ol>
+    <li>Rename <code>guess_number.html</code> to <code>index.html</code>.</li>
+    <li>Revisit the GitHub Pages URL to confirm it loads automatically.</li>
+</ol>
+<hr />
+<h3><strong>5. Wrap-Up and Homework (5 minutes)</strong></h3>
+<p><strong>Summary:</strong></p>
+<ul>
+    <li>Students learned to:
+        <ul>
+            <li>Use GitHub for creating repositories and uploading files.</li>
+            <li>Build a simple number-guessing game.</li>
+            <li>Host their project online with GitHub Pages.</li>
+        </ul>
+    </li>
+</ul>

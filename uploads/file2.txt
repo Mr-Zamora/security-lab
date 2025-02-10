@@ -1,0 +1,2 @@
+Another sensitive file with internal system configuration.
+Database credentials and API keys should never be stored like this.

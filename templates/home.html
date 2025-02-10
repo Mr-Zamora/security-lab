@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Lab - Vulnerability Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .vulnerability-list {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .vulnerability-item {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .vulnerability-title {
+            color: #d63031;
+            margin-bottom: 10px;
+        }
+        .test-steps {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-left: 3px solid #2ecc71;
+            margin: 10px 0;
+        }
+        code {
+            background-color: #f1f2f3;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="vulnerability-list">
+        <h1>PWA Security Lab - Vulnerability Demo</h1>
+        <p>This lab contains twelve intentional vulnerabilities for educational purposes. For detailed testing instructions, please refer to HACKER.md. Each vulnerability demonstrates a common security issue in web applications.</p>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">1. SQL Injection Demo</h2>
+            <p>Test SQL injection in the login form to bypass authentication. Multiple methods available:</p>
+            
+            <div class="test-steps">
+                <strong>Basic Methods</strong>
+                <ol>
+                    <li>Username Injection:
+                        <ul>
+                            <li>Username: <code>admin' OR '1'='1</code></li>
+                            <li>Password: anything</li>
+                        </ul>
+                    </li>
+                    <li>Password Injection:
+                        <ul>
+                            <li>Username: anything</li>
+                            <li>Password: <code>' OR '1'='1--</code></li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <strong>Alternative Payloads</strong>
+                <ul>
+                    <li>Using LIKE operator:
+                        <br><code>admin' OR username LIKE '%admin%</code>
+                    </li>
+                    <li>Using boolean logic:
+                        <br><code>x' OR 'a'='a</code>
+                    </li>
+                    <li>Using comments:
+                        <br><code>admin'--</code>
+                    </li>
+                    <li>Using OR with numbers:
+                        <br><code>admin' OR 5>3--</code>
+                    </li>
+                    <li>Using UNION:
+                        <br><code>admin' UNION SELECT 'admin', '123</code>
+                    </li>
+                </ul>
+
+                <strong>How to Test</strong>
+                <ol>
+                    <li>Go to <a href="/login">Login Page</a></li>
+                    <li>Try different payloads in either field</li>
+                    <li>Check server logs for query execution</li>
+                    <li>Observe authentication bypass</li>
+                </ol>
+
+                <div class="note" style="background-color: #fff3cd; padding: 10px; margin-top: 10px; border-left: 4px solid #ffc107;">
+                    <strong>Note:</strong> The server logs all SQL queries, allowing you to see how each injection affects the final query. Check the terminal output while testing.
+                </div>
+            </div>
+
+            <div class="explanation" style="margin-top: 15px;">
+                <strong>Why These Work:</strong>
+                <ul>
+                    <li><code>OR '1'='1</code> - Always evaluates to TRUE</li>
+                    <li><code>--</code> - Comments out remaining SQL</li>
+                    <li><code>UNION</code> - Combines queries</li>
+                    <li><code>LIKE</code> - Pattern matching</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">2. Weak Password Storage</h2>
+            <p>Compare secure vs insecure password storage methods.</p>
+            <div class="test-steps">
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Go to <a href="/register">Registration Page</a></li>
+                    <li>Create an account</li>
+                    <li>Check users.json for plaintext password</li>
+                    <li>Run check_db.py to see hashed version</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">3. XSS (Cross-Site Scripting)</h2>
+            <p>Test both reflected and stored XSS vulnerabilities.</p>
+            <div class="test-steps">
+                <strong>Reflected XSS (Search):</strong>
+                <ol>
+                    <li>Go to <a href="/search">Search Page</a></li>
+                    <li>Enter: <code>&lt;script&gt;alert('XSS!');&lt;/script&gt;</code></li>
+                </ol>
+                <strong>Stored XSS (Comments):</strong>
+                <ol>
+                    <li>Go to <a href="/stored-xss">Comments Page</a></li>
+                    <li>Post: <code>&lt;script&gt;alert('Stored XSS!');&lt;/script&gt;</code></li>
+                    <li>Reload page to see persistent XSS</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">4. Insecure API Endpoint</h2>
+            <p>Test direct access to API without authentication.</p>
+            <div class="test-steps">
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Access <a href="/api/data">API Endpoint</a> directly</li>
+                    <li>Send POST request with any JSON data</li>
+                    <li>Check data.json for stored payload</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">5. Unprotected Sessions</h2>
+            <p>Demonstrate session hijacking and CSRF vulnerabilities.</p>
+            <div class="test-steps">
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Go to <a href="/report">Report Page</a></li>
+                    <li>Open DevTools (F12)</li>
+                    <li>Check Console for exposed session data</li>
+                    <li>Close browser and reopen - session persists</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">6. IDOR (Insecure Direct Object Reference)</h2>
+            <p>Access user data without proper authorization.</p>
+            <div class="test-steps">
+                <ol>
+                    <li>Try accessing: <code>/user/1</code> and <code>/user/2</code></li>
+                    <li>No authentication required</li>
+                    <li>Can view any user's data</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">7. CSRF (Cross-Site Request Forgery)</h2>
+            <p>Perform actions on behalf of authenticated users.</p>
+            <div class="test-steps">
+                <ol>
+                    <li>Log in to the application</li>
+                    <li>Visit this HTML page:
+                        <pre><code>&lt;form id="csrf" action="http://localhost:5000/transfer" method="POST"&gt;
+    &lt;input type="hidden" name="amount" value="1000"&gt;
+    &lt;input type="hidden" name="to_user" value="attacker"&gt;
+&lt;/form&gt;
+&lt;script&gt;document.getElementById('csrf').submit();&lt;/script&gt;</code></pre>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">8. Missing Security Headers</h2>
+            <p>Demonstrates missing or misconfigured security headers.</p>
+            <div class="test-steps">
+                <ol>
+                    <li>Use browser dev tools (F12)</li>
+                    <li>Go to Network tab</li>
+                    <li>Check response headers</li>
+                    <li>Notice missing CSP and weak X-Frame-Options</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">9. Insecure Design (A04)</h2>
+            <p>Demonstrates predictable resource locations and weak architecture.</p>
+            <div class="test-steps">
+                <ol>
+                    <li>Files are stored in predictable locations:
+                        <br><code>/uploads/file1.txt</code>
+                        <br><code>/uploads/file2.txt</code>
+                    </li>
+                    <li>No access control on downloads</li>
+                    <li>Sequential and predictable IDs</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">10. Vulnerable Components (A06)</h2>
+            <p>Using outdated dependencies with known vulnerabilities.</p>
+            <div class="test-steps">
+                <ol>
+                    <li>Check dependency status: <a href="/check_dependency">Vulnerability Check</a></li>
+                    <li>Using requests v2.0.1 (known vulnerable)</li>
+                    <li>No dependency scanning</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">11. Security Logging Failures (A09)</h2>
+            <p>Demonstrates poor logging practices and missing audit trails.</p>
+            <div class="test-steps">
+                <strong>Demo Credentials:</strong>
+                <ul>
+                    <li>Username: <code>admin</code></li>
+                    <li>Password: <code>admin123</code></li>
+                </ul>
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Try logging in with the demo credentials above</li>
+                    <li>Check server logs - sensitive data exposed</li>
+                    <li>Notice missing audit trails</li>
+                </ol>
+                <div class="note" style="background-color: #fff3cd; padding: 10px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                    <strong>Note:</strong> This is a separate demo endpoint using hardcoded credentials. 
+                    The main user authentication system uses the database and is demonstrated in other vulnerabilities.
+                </div>
+                <form action="/admin/login" method="POST" class="mt-3">
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Test Insecure Login</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="vulnerability-item">
+            <h2 class="vulnerability-title">12. SSRF Vulnerability (A10)</h2>
+            <p>Server-Side Request Forgery vulnerability demonstration.</p>
+            <div class="test-steps">
+                <strong>Test Steps:</strong>
+                <ol>
+                    <li>Enter internal URL: <code>file:///etc/passwd</code></li>
+                    <li>Or local service: <code>http://localhost:8080</code></li>
+                    <li>Server will fetch without validation</li>
+                </ol>
+                <form action="/fetch-url" method="POST" class="mt-3">
+                    <input type="text" name="url" placeholder="Enter URL to fetch" required>
+                    <button type="submit">Fetch URL</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="owasp-footer">
+        <div class="footer-content">
+            <h3>OWASP Top 10:2021 Alignment</h3>
+            <div class="owasp-grid">
+                <div class="owasp-item">
+                    <strong>A01: Broken Access Control</strong>
+                    <ul>
+                        <li>IDOR in user endpoint</li>
+                        <li>Missing access controls</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A02: Cryptographic Failures</strong>
+                    <ul>
+                        <li>Plaintext passwords</li>
+                        <li>Weak storage methods</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A03: Injection</strong>
+                    <ul>
+                        <li>SQL Injection</li>
+                        <li>XSS (Reflected & Stored)</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A04: Insecure Design</strong>
+                    <ul>
+                        <li>Predictable IDs</li>
+                        <li>Weak sessions</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A05: Security Misconfiguration</strong>
+                    <ul>
+                        <li>Missing headers</li>
+                        <li>Information exposure</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A06: Vulnerable Components</strong>
+                    <ul>
+                        <li>Outdated dependencies</li>
+                        <li>Known vulnerabilities</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A07: Authentication Failures</strong>
+                    <ul>
+                        <li>Weak session management</li>
+                        <li>No MFA</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A08: Software Integrity Failures</strong>
+                    <ul>
+                        <li>CSRF vulnerability</li>
+                        <li>No integrity checks</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A09: Logging Failures</strong>
+                    <ul>
+                        <li>Basic logging only</li>
+                        <li>No audit trail</li>
+                    </ul>
+                </div>
+                <div class="owasp-item">
+                    <strong>A10: SSRF</strong>
+                    <ul>
+                        <li>Unrestricted file access</li>
+                        <li>No URL validation</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="footer-note">This is an educational demo. All vulnerabilities are intentional. Do not use in production.</p>
+        </div>
+    </footer>
+
+    <style>
+        .owasp-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(2, auto);
+            column-gap: 1.5rem;
+            row-gap: 4rem;
+            margin: 2rem 0;
+            padding: 0.5rem;
+        }
+        @media (max-width: 1200px) {
+            .owasp-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: auto;
+                column-gap: 1.5rem;
+                row-gap: 3.5rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .owasp-grid {
+                grid-template-columns: repeat(2, 1fr);
+                column-gap: 1.5rem;
+                row-gap: 3rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .owasp-grid {
+                grid-template-columns: 1fr;
+                row-gap: 2.5rem;
+            }
+        }
+        .owasp-item {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .owasp-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .owasp-footer {
+            background: #f8f9fa;
+            padding: 3rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        .owasp-item strong {
+            color: #1976d2;
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e3f2fd;
+        }
+        .owasp-item ul {
+            margin: 0;
+            padding-left: 1.2rem;
+            list-style-type: none;
+        }
+        .owasp-item li {
+            margin: 0.5rem 0;
+            color: #555;
+            position: relative;
+            line-height: 1.4;
+        }
+        .owasp-item li:before {
+            content: "•";
+            color: #2196f3;
+            font-weight: bold;
+            position: absolute;
+            left: -1rem;
+        }
+    </style>
+</body>
+</html>

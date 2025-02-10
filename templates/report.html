@@ -1,0 +1,455 @@
+    <h3><strong>Expanded Hacker's Report: Breaking into the Client&rsquo;s PWA</strong></h3>
+    <hr />
+    <h3><strong>Objective</strong></h3>
+    <p>I was hired to assess the security of the client&rsquo;s Progressive Web App (PWA). Using a combination of <strong>blackbox</strong>, <strong>whitebox</strong>, and <strong>greybox testing methodologies</strong>, alongside <strong>Google Lighthouse</strong>, I identified vulnerabilities, demonstrated how they could be exploited, and provided actionable recommendations. Below is a detailed report of the vulnerabilities, including how Lighthouse was used to uncover critical issues.</p>
+    <hr />
+    <h3><strong>Detailed Testing Report</strong></h3>
+    <hr />
+    <h3><strong>1. SQL Injection in Login Page</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>The <strong>login page</strong> is the first barrier between unauthorized users and the system. Testing ensures that input validation and database queries are secure to prevent SQL Injection attacks.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Entered the following malicious input into the <strong>username</strong> field:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">bash</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-bash">admin<span class="hljs-string">' OR '</span>1<span class="hljs-string">'='</span>1
+                    </code></div>
+            </div>
+        </li>
+        <li>Used any password (it didn&rsquo;t matter) and submitted the form.</li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>Successfully logged in as <code>admin</code> without knowing the actual password.</li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse flagged the lack of security headers (e.g., <code>Content-Security-Policy</code>) that could mitigate attacks like SQL Injection by restricting what data is executed or accessed in the application.</li>
+        <li>Highlighted <strong>best practices</strong> violations that pointed to potential misconfigurations in the app, prompting further investigation.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Simulated an external attacker with no insider knowledge.</li>
+                <li>Interacted with the login form and observed that injected input bypassed authentication.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Reviewed the SQL query in the source code and identified that it concatenated user input directly:
+                    <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                        <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                        <div class="sticky top-9 md:top-[5.75rem]">
+                            <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                                <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">query = <span class="hljs-string">f"SELECT password FROM users WHERE username = '<span class="hljs-subst">{username}</span>'"</span>
+                            </code></div>
+                    </div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Combined knowledge of the SQL query with manual input to craft a malicious payload.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>The login page appeared normal and functional. Most users wouldn&rsquo;t notice anything unusual unless they deliberately tested for SQL Injection.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Use parameterised queries to secure database operations. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">c.execute(<span class="hljs-string">"SELECT password FROM users WHERE username = ?"</span>, (username,))
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>2. Weak Password Storage</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>Password storage determines how well user credentials are protected. Testing ensures that passwords are securely hashed to protect users in the event of a database breach.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Registered a new account via the <strong>Registration Page</strong> and inspected how passwords were stored in <code>users.json</code> and the SQLite database.</li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>Found plaintext passwords stored directly in both locations:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">json</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-json"><span class="hljs-punctuation">{</span>
+                        <span class="hljs-attr">"admin"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"admin123"</span><span class="hljs-punctuation">,</span>
+                        <span class="hljs-attr">"testuser"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"mypassword"</span>
+                        <span class="hljs-punctuation">}</span>
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse flagged that the application was transmitting sensitive data over an <strong>unencrypted HTTP connection</strong>. Without HTTPS, plaintext passwords could be intercepted by attackers during transmission.</li>
+        <li>Lighthouse also warned of outdated JavaScript libraries, which could increase the risk of exploitation.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Observed the registration process and inspected the server response for errors or leaks.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Found that passwords were stored without hashing in the source code:
+                    <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                        <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                        <div class="sticky top-9 md:top-[5.75rem]">
+                            <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                                <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">users[username] = password
+                            </code></div>
+                    </div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Inspected the <code>users.json</code> file and <code>users.db</code> for stored credentials to confirm plaintext storage.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>Users assume passwords are secure. This vulnerability is invisible unless storage files or database entries are inspected.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Hash passwords before storing them. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python"><span class="hljs-keyword">from</span> werkzeug.security <span class="hljs-keyword">import</span> generate_password_hash
+                        hashed_password = generate_password_hash(password)
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>3. XSS in Search Bar</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>Search bars interact with user input and often display results on the page. If the input isn&rsquo;t sanitized, attackers can inject malicious scripts (XSS), compromising users&rsquo; data or redirecting them to malicious sites.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Entered the following script into the <strong>Search Bar</strong>:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">html</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="javascript"><span class="hljs-title function_">alert</span>(<span class="hljs-string">'XSS Vulnerability!'</span>);</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>The app displayed my input directly on the page, executing the script and showing an alert box.</li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse flagged the absence of a <strong>Content-Security-Policy (CSP)</strong> header, which could have restricted the execution of inline scripts like the one I injected.</li>
+        <li>Highlighted other best practice violations, such as missing <code>X-XSS-Protection</code> headers, which could mitigate some XSS attacks.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Entered malicious input into the search bar and observed the response.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Reviewed the rendering logic in the source code and found that user input was directly injected into the DOM without escaping:
+                    <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                        <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">html</div>
+                        <div class="sticky top-9 md:top-[5.75rem]">
+                            <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                                <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Your search term was: {{ query }}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+                            </code></div>
+                    </div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Used knowledge of rendering logic to craft a more refined XSS payload.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>The search bar appeared harmless, and the vulnerability wasn&rsquo;t obvious until malicious input was tested.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Escape and sanitize user input before rendering. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python"><span class="hljs-keyword">from</span> markupsafe <span class="hljs-keyword">import</span> escape
+                        <span class="hljs-keyword">return</span> <span class="hljs-string">f"Search results for: <span class="hljs-subst">{escape(query)}</span>"</span>
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>4. Insecure API Endpoint</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>API endpoints handle direct data exchanges between the client and server. If input isn&rsquo;t validated, attackers can inject malicious payloads or manipulate stored data.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Sent a malicious JSON payload to <code>/api/data</code> using <strong>Postman</strong>:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">json</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-json"><span class="hljs-punctuation">{</span>
+                        <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"&lt;script&gt;alert('API Vulnerability!');&lt;/script&gt;"</span>
+                        <span class="hljs-punctuation">}</span>
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>The server accepted the payload without validation and stored it in <code>data.json</code>.</li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse highlighted insecure HTTP communication, which could allow an attacker to intercept and modify API requests.</li>
+        <li>Warned of missing security headers like <code>Access-Control-Allow-Origin</code>, which could lead to cross-origin attacks.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Used Postman to send payloads and observed how the server responded.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Reviewed the <code>/api/data</code> route to confirm that no validation logic was applied to incoming JSON data.</li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Combined knowledge of JSON file handling (<code>data.json</code>) with crafted payloads to test API vulnerabilities.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>API endpoints are usually invisible to users unless specifically tested, making this a hidden but significant risk.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Validate JSON payloads before processing. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python"><span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> <span class="hljs-built_in">isinstance</span>(request.json[<span class="hljs-string">'data'</span>], <span class="hljs-built_in">str</span>):
+                        <span class="hljs-keyword">return</span> jsonify({<span class="hljs-string">"error"</span>: <span class="hljs-string">"Invalid data format"</span>}), <span class="hljs-number">400</span>
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>5. Unprotected Sessions</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>Session management ensures that users stay authenticated securely. Testing reveals whether sessions are properly expired, protected, and configured to prevent unauthorized access.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Logged in and monitored session cookies.</li>
+        <li>Left the session idle for over 5 minutes and tried performing actions.</li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>The session didn&rsquo;t expire, allowing continued access even after prolonged inactivity.</li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse flagged that cookies lacked secure attributes like <code>Secure</code> and <code>HttpOnly</code>, which are critical for protecting session data from hijacking.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Logged in and tested session behavior after inactivity.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Inspected session configuration in the source code and confirmed missing expiration logic:
+                    <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                        <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                        <div class="sticky top-9 md:top-[5.75rem]">
+                            <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                                <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">session.permanent = <span class="hljs-literal">True</span>
+                            </code></div>
+                    </div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Used developer tools to inspect cookies and verify the absence of secure flags.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>Users rarely question session management unless they encounter an unexpected timeout or session hijacking.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Add proper session expiration and secure cookie attributes. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">app.permanent_session_lifetime = timedelta(minutes=<span class="hljs-number">5</span>)
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>Session Vulnerability</strong></h3>
+    <h4><strong>Why Test This?</strong></h4>
+    <p>Session management ensures that users stay authenticated securely. Testing reveals whether sessions are properly expired, protected, and configured to prevent unauthorized access.</p>
+    <h4><strong>What I Did</strong></h4>
+    <ul>
+        <li>Logged in and monitored session cookies.</li>
+        <li>Left the session idle for over 5 minutes and tried performing actions.</li>
+    </ul>
+    <h4><strong>What Happened</strong></h4>
+    <ul>
+        <li>The session didn&rsquo;t expire, allowing continued access even after prolonged inactivity.</li>
+    </ul>
+    <h4><strong>How Google Lighthouse Was Used</strong></h4>
+    <ul>
+        <li>Lighthouse flagged that cookies lacked secure attributes like <code>Secure</code> and <code>HttpOnly</code>, which are critical for protecting session data from hijacking.</li>
+    </ul>
+    <h4><strong>Methodologies Used</strong></h4>
+    <ol>
+        <li><strong>Blackbox Testing</strong>:
+            <ul>
+                <li>Logged in and tested session behavior after inactivity.</li>
+            </ul>
+        </li>
+        <li><strong>Whitebox Testing</strong>:
+            <ul>
+                <li>Inspected session configuration in the source code and confirmed missing expiration logic:
+                    <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                        <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">html</div>
+                        <div class="sticky top-9 md:top-[5.75rem]">
+                            <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                                <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"session-info"</span>&gt;</span>
+                            <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Session ID: <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"session-id"</span>&gt;</span>{{ session.id }}<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+                            <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Last Activity: <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"last-activity"</span>&gt;</span>{{ session.get('last_activity') }}<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+                            <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+                            <span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span>
+                            <span class="hljs-comment">// Intentionally vulnerable: Exposing session data to JavaScript</span>
+                            console.log('Session Cookie:', document.cookie);
+                            <span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+                            </code></div>
+                    </div>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Greybox Testing</strong>:
+            <ul>
+                <li>Used developer tools to inspect cookies and verify the absence of secure flags.</li>
+            </ul>
+        </li>
+    </ol>
+    <h4><strong>What Most People Would Miss</strong></h4>
+    <ul>
+        <li>Users rarely question session management unless they encounter an unexpected timeout or session hijacking.</li>
+    </ul>
+    <h4><strong>What You Should Fix</strong></h4>
+    <ul>
+        <li>Add proper session expiration and secure cookie attributes. Example:
+            <div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950">
+                <div class="flex items-center text-token-text-secondary px-4 py-2 text-xs font-sans justify-between rounded-t-md h-9 bg-token-sidebar-surface-primary dark:bg-token-main-surface-secondary select-none">python</div>
+                <div class="sticky top-9 md:top-[5.75rem]">
+                    <div class="absolute bottom-0 right-2 flex h-9 items-center">
+                        <div class="flex items-center rounded bg-token-sidebar-surface-primary px-2 font-sans text-xs text-token-text-secondary dark:bg-token-main-surface-secondary"><span class="" data-state="closed">Copy code</span></div>
+                    </div>
+                </div>
+                <div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-python">app.permanent_session_lifetime = timedelta(minutes=<span class="hljs-number">5</span>)
+                    </code></div>
+            </div>
+        </li>
+    </ul>
+    <hr />
+    <h3><strong>Conclusion</strong></h3>
+    <p>Google Lighthouse provided critical insights into missing security headers, insecure communication, and outdated libraries, complementing manual testing through <strong>blackbox</strong>, <strong>whitebox</strong>, and <strong>greybox methodologies</strong>. These combined approaches ensured comprehensive coverage of the PWA&rsquo;s vulnerabilities. Let me know when you&rsquo;re ready for another round of testing! 😉</p>
+    <pre>
+        # Example Code
+        def example_function():
+            print("Hello, World!")
+            return True
+    </pre>

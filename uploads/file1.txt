@@ -1,0 +1,2 @@
+This is a sensitive file that should be protected.
+Contains user data and other confidential information.

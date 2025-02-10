@@ -1,0 +1,50 @@
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+127.0.0.1 - - [07/Feb/2025 15:29:36] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [07/Feb/2025 15:29:36] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Feb/2025 15:29:47] "[31m[1mPOST /login HTTP/1.1[0m" 401 -
+ * Detected change in 'c:\\Users\\rzamora\\py\\flask-pwa-security\\app.py', reloading
+ * Detected change in 'c:\\Users\\rzamora\\py\\flask-pwa-security\\app.py', reloading
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+127.0.0.1 - - [07/Feb/2025 15:31:16] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [07/Feb/2025 15:31:17] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Feb/2025 15:31:18] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Feb/2025 15:31:18] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+[ADMIN LOGIN] Attempt with credentials - Username: testuser, Password: mysecretpass123
+127.0.0.1 - - [07/Feb/2025 15:31:37] "POST /admin/login HTTP/1.1" 200 -
+ * Detected change in 'c:\\Users\\rzamora\\py\\flask-pwa-security\\app.py', reloading
+ * Detected change in 'c:\\Users\\rzamora\\py\\flask-pwa-security\\app.py', reloading
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+127.0.0.1 - - [07/Feb/2025 15:34:21] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Feb/2025 15:34:21] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+[ADMIN LOGIN] Attempt with credentials - Username: admin, Password: admin123
+127.0.0.1 - - [07/Feb/2025 15:34:39] "POST /admin/login HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with watchdog (windowsapi)
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+127.0.0.1 - - [07/Feb/2025 15:39:45] "[31m[1mGET /admin/login HTTP/1.1[0m" 405 -
+127.0.0.1 - - [07/Feb/2025 15:39:47] "[31m[1mGET /admin/login HTTP/1.1[0m" 405 -
+127.0.0.1 - - [07/Feb/2025 15:39:49] "[31m[1mGET /admin/login HTTP/1.1[0m" 405 -
+127.0.0.1 - - [07/Feb/2025 15:39:56] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Feb/2025 15:39:56] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with watchdog (windowsapi)
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+ * Detected change in 'C:\\Users\\rzamora\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\requests\\__init__.py', reloading
+ * Detected change in 'C:\\Users\\rzamora\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\werkzeug\\exceptions.py', reloading
+ * Detected change in 'C:\\Users\\rzamora\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\zipfile\\__init__.py', reloading
+ * Detected change in 'c:\\Users\\rzamora\\py\\flask-pwa-security\\init_db.py', reloading
+ * Restarting with watchdog (windowsapi)
+ * Debugger is active!
+ * Debugger PIN: 136-079-128
+127.0.0.1 - - [11/Feb/2025 10:32:51] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [11/Feb/2025 10:32:51] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [11/Feb/2025 10:32:51] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
