@@ -9,8 +9,10 @@ from functools import wraps
 import urllib.request
 import requests
 from packaging import version
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = "supersecretkey"  # For session management
 
 # JSON Files for API Data
