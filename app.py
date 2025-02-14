@@ -9,10 +9,8 @@ from functools import wraps
 import urllib.request
 import requests
 from packaging import version
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
 app.secret_key = "supersecretkey"  # For session management
 
 # JSON Files for API Data
@@ -151,6 +149,10 @@ def report():
     # Should check if user is logged in, but doesn't
     return render_template('report.html')
 
+@app.route('/test-session')
+def test_session():
+    return render_template('test_session.html')
+
 # Setup logging - intentionally insecure
 logging.basicConfig(
     level=logging.INFO,
@@ -161,25 +163,23 @@ logging.basicConfig(
     ]
 )
 
-# Simulated user data for IDOR demo
-USERS = {
-    '1': {'name': 'admin', 'balance': 1000},
-    '2': {'name': 'user', 'balance': 500}
-}
-
-# Intentionally vulnerable decorators
-def log_access(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        logging.info(f"Access attempt from IP: {request.remote_addr}")
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route('/user/<id>')
 def get_user(id):
     # Intentionally vulnerable: IDOR - no authorization check
-    if id in USERS:
-        return jsonify(USERS[id])
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT id, username FROM users WHERE id = ?", (id,))
+    user = c.fetchone()
+    conn.close()
+    
+    if user:
+        # Convert to dictionary format
+        user_data = {
+            'id': user[0],
+            'username': user[1],
+            'balance': 1000 if user[1] == 'admin' else 500  # Simulated balance
+        }
+        return jsonify(user_data)
     return "User not found", 404
 
 # User balances for CSRF demo
