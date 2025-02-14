@@ -1,135 +1,109 @@
-# Hacker's Report: Breaking into the Client's PWA
+# PWA Security Lab - Comprehensive Vulnerability Documentation
 
-This document outlines the security vulnerabilities identified in the client's Progressive Web App (PWA). It provides detailed replication steps, explanations of why each vulnerability exists, and recommendations for fixes. The testing methodologies used include **blackbox**, **whitebox**, and **greybox testing**, along with **Google Lighthouse** audits.
+This document outlines the security vulnerabilities identified in the client's Progressive Web App (PWA). It provides detailed replication steps, explanations of why each vulnerability exists, and recommendations for fixes. The testing methodologies used include blackbox, whitebox, and greybox testing, along with Google Lighthouse audits.
 
----
+## Overview
+This security lab contains multiple intentional vulnerabilities designed for educational purposes. Each vulnerability demonstrates common security issues found in web applications, aligned with OWASP Top 10 guidelines.
 
-## **Objectives**
-- Identify security weaknesses in the PWA.
-- Simulate real-world attacks to demonstrate vulnerabilities.
-- Provide actionable recommendations to secure the system.
+## Vulnerabilities and Testing Instructions
 
----
+### 1. SQL Injection
+#### Description
+The login form is intentionally vulnerable to SQL injection attacks through both username and password fields.
 
-## **Vulnerabilities and Replication Steps**
+#### Test Methods
+##### Basic Methods:
+1. Username Injection:
+   - Username: `admin' OR '1'='1`
+   - Password: (anything)
 
-### **1. SQL Injection Demo**
+2. Password Injection:
+   - Username: (anything)
+   - Password: `' OR '1'='1--`
 
-#### **Description**
-The login form allows SQL injection through both username and password fields, demonstrating multiple attack vectors.
-
-#### **Steps to Replicate**
-
-##### Method 1: Username Injection
-1. Navigate to the Login Page: `http://127.0.0.1:5000/login`
-2. Enter in the **Username** field:
-   ```sql
-   admin' OR '1'='1
-   ```
-3. Enter any password
-4. Click Login
-
-##### Method 2: Password Injection
-1. Navigate to the Login Page: `http://127.0.0.1:5000/login`
-2. Enter any username
-3. Enter in the **Password** field:
-   ```sql
-   ' OR '1'='1--
-   ```
-4. Click Login
-
-##### Alternative SQL Injection Payloads
-
+##### Advanced Payloads:
 1. Using LIKE operator:
-```sql
-admin' OR username LIKE '%admin%
-```
+   ```sql
+   admin' OR username LIKE '%admin%'
+   ```
 
 2. Using boolean logic:
-```sql
-x' OR 'a'='a
-```
+   ```sql
+   x' OR 'a'='a
+   ```
 
 3. Using comments:
-```sql
-admin'--
-```
+   ```sql
+   admin'--
+   ```
 
 4. Using OR with numbers:
-```sql
-admin' OR 5>3--
-```
+   ```sql
+   admin' OR 5>3--
+   ```
 
 5. Using UNION:
-```sql
-admin' UNION SELECT 'admin', '123
-```
+   ```sql
+   admin' UNION SELECT 'admin', '123
+   ```
 
-#### **Why These Work**
+#### Why These Work
 - `OR '1'='1` - Always evaluates to TRUE
 - `--` - Comments out remaining SQL
 - `UNION` - Combines queries
-- The server logs all SQL queries, allowing observation of injection effects
+- `LIKE` - Pattern matching
+- Server logs all queries for observation
 
-#### **How to Test Systematically**
-1. Go to Login Page
+#### Test Steps
+1. Go to `/login` page
 2. Try different payloads in either field
 3. Check server logs for query execution
 4. Observe authentication bypass
 
-### **4. Insecure API Endpoint**
+**Note:** The server logs all SQL queries, allowing you to see how each injection affects the final query. Check the terminal output while testing.
 
-#### **Description**
-The API endpoint is vulnerable to multiple attack vectors including XSS through JSON data and lacks proper authentication.
+### 2. Weak Password Storage
+#### Description
+Demonstrates insecure password storage practices.
 
-#### **Steps to Replicate**
+#### Test Steps:
+1. Go to `/register` page
+2. Create an account
+3. Check `users.json` for plaintext password
+4. Run `check_db.py` to see hashed version
 
-##### Method 1: Direct API Access
-1. Access the API endpoint directly: `http://127.0.0.1:5000/api/data`
-2. Send POST request with malicious payload:
-   ```json
-   {
-     "data": "<script>alert('API Vulnerability!');</script>"
-   }
-   ```
+### 3. Cross-Site Scripting (XSS)
+#### Description
+Multiple XSS vulnerabilities in both reflected and stored contexts.
 
-##### Method 2: XSS Through JSON
-1. Create a test HTML file (test_api.html):
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Test API Vulnerability</title>
-</head>
-<body>
-    <h2>Test API Vulnerability</h2>
-    <form id="apiForm" onsubmit="submitForm(event)">
-        <textarea id="jsonData" style="width: 300px; height: 100px">{"data": "<script>alert('API Vulnerability!');</script>"}</textarea>
-        <br><br>
-        <button type="submit">Send</button>
-    </form>
+#### Test Methods:
+##### Reflected XSS (Search):
+1. Go to `/search` page
+2. Enter: `<script>alert('XSS!');</script>`
 
-    <script>
-        function submitForm(event) {
-            event.preventDefault();
-            const data = document.getElementById('jsonData').value;
-            fetch('http://127.0.0.1:5000/api/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: data
-            })
-            .then(response => response.json())
-            .then(result => alert('Success: ' + JSON.stringify(result)))
-            .catch(error => alert('Error: ' + error));
-        }
-    </script>
-</body>
-</html>
+##### Stored XSS (Comments):
+1. Go to `/stored-xss` page
+2. Post: `<script>alert('Stored XSS!');</script>`
+3. Reload page to see persistent XSS
+
+### 4. Insecure API Endpoint
+#### Description
+API endpoint vulnerable to unauthorized access and XSS through JSON data.
+
+#### Test Methods:
+1. Direct API Access:
+   - Access `/api/data` directly
+   - Send POST request with JSON payload
+   - Check `data.json` for stored data
+
+2. XSS Through JSON:
+```json
+{
+  "data": "<script>alert('API Vulnerability!');</script>"
+}
 ```
 
-##### Alternative XSS Payloads
+#### Alternative Payloads:
 1. Image-based XSS:
 ```json
 {
@@ -144,527 +118,205 @@ The API endpoint is vulnerable to multiple attack vectors including XSS through 
 }
 ```
 
-#### **Why It's Vulnerable**
-1. No input sanitization on JSON data
-2. Stored XSS through API endpoint
-3. No authentication required for API access
-4. No Content-Security-Policy headers
-5. Direct rendering of user input
+### 5. Unprotected Sessions
+#### Description
+Demonstrates weak session management and hijacking vulnerabilities.
 
-#### **Expected Results**
-- Successful POST requests store unsanitized data
-- XSS payloads execute when data is rendered
-- No authentication barriers prevent API access
+#### Vulnerabilities:
+- Sessions accessible via JavaScript (no HttpOnly flag)
+- Sessions work over HTTP (no Secure flag)
+- No SameSite cookie protection
+- Extended session duration (365 days)
+- No session rotation
+- Improper session invalidation
 
-#### **Recommendation**
-1. Implement proper input sanitization for JSON data
-2. Add authentication to API endpoints
-3. Implement Content-Security-Policy headers
-4. Validate and escape all user input before storage or rendering
-5. Add rate limiting to prevent abuse
+#### Test Steps:
+1. Go to `/report` page
+2. Open DevTools (F12)
+3. Check Console for exposed session data
+4. Close browser and reopen - session persists
 
-### **5. Unprotected Sessions**
+### 6. IDOR (Insecure Direct Object Reference)
+#### Description
+Demonstrates unauthorized access to user data.
 
-#### **Description**
-The application uses insecure session management that can be exploited through session hijacking and persistence attacks. Sessions are configured with weak security settings and expose sensitive data.
+#### Test Steps:
+1. Try accessing:
+   - `/user/1`
+   - `/user/2`
+2. No authentication required
+3. Can view any user's data
 
-#### **Vulnerabilities Found**
-1. Sessions accessible via JavaScript (no HttpOnly flag)
-2. Sessions work over HTTP (no Secure flag)
-3. No SameSite cookie protection
-4. Extremely long session duration (365 days)
-5. No session rotation on login
-6. No proper session invalidation
+### 7. CSRF (Cross-Site Request Forgery)
+#### Description
+Demonstrates unauthorized actions through cross-site requests.
 
-#### **Steps to Replicate**
-
-##### Method 1: Session Inspection and Hijacking
-1. First, log in to the application:
-   - Go to `http://127.0.0.1:5000/login`
-   - Use SQL injection to login:
-     - Username: `admin' OR '1'='1`
-     - Password: (any value)
-
-2. Navigate to the Report Page: `http://127.0.0.1:5000/report`
-
-3. Open Browser DevTools (F12) and in Console, execute either:
-   ```javascript
-   // View all cookies
-   console.log(document.cookie)
-
-   // Or for better readability, use:
-   document.cookie.split(';').forEach(cookie => console.log(cookie.trim()))
-   ```
-
-4. Note that session cookie is accessible via JavaScript, which makes it vulnerable to XSS attacks
-
-**Important**: You must run these commands while on a page from the Flask application (like `/report` or `/login`). The commands won't work if you try them on a different domain or local file.
-
-##### Method 2: Session Persistence Test
-1. Log in using the steps from Method 1
-2. Note your session cookie value using the console commands above
-3. Close your browser completely
-4. Open a new browser window
-5. Go to `http://127.0.0.1:5000/report`
-6. You should still be logged in
-7. Check that the session cookie value remains the same
-
-##### Method 3: Cross-Site Testing
-1. While logged in, open the browser console (F12)
-2. Execute this cross-origin request:
-   ```javascript
-   fetch('http://127.0.0.1:5000/api/data', {
-       credentials: 'include'  // This will send cookies
-   }).then(r => r.json()).then(console.log)
-   ```
-3. Note that the request succeeds due to missing SameSite protection
-
-#### **Vulnerable Configuration**
-From app.py:
-```python
-# Session Configuration (Intentionally Vulnerable)
-app.permanent_session_lifetime = timedelta(days=365)  # Extremely long session
-app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP (not HTTPS only)
-app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access
-app.config['SESSION_COOKIE_SAMESITE'] = None  # Allow cross-site requests
+#### Test Payload:
+```html
+<form id="csrf" action="http://localhost:5000/transfer" method="POST">
+    <input type="hidden" name="amount" value="1000">
+    <input type="hidden" name="to_user" value="attacker">
+</form>
+<script>document.getElementById('csrf').submit();</script>
 ```
 
-#### **Impact**
-1. **Session Hijacking**: Attackers can steal session cookies through XSS or malicious JavaScript
-2. **Persistence Abuse**: Sessions remain valid for extremely long periods
-3. **Cross-Site Attacks**: Missing SameSite protection enables CSRF attacks
-4. **Man-in-the-Middle**: Non-secure cookies can be intercepted over HTTP
-
-#### **Recommendation**
-1. Implement secure session configuration:
-   ```python
-   # Secure Configuration
-   app.config.update(
-       SESSION_COOKIE_SECURE=True,        # HTTPS only
-       SESSION_COOKIE_HTTPONLY=True,      # No JavaScript access
-       SESSION_COOKIE_SAMESITE='Strict',  # Prevent CSRF
-       PERMANENT_SESSION_LIFETIME=timedelta(hours=1)  # Short lifetime
-   )
-   ```
-
-2. Implement session security measures:
-   ```python
-   @app.before_request
-   def secure_session():
-       # Rotate session ID on login
-       if 'user_id' in session and 'session_created' not in session:
-           session.regenerate()
-           session['session_created'] = datetime.now()
-       
-       # Expire old sessions
-       if 'session_created' in session:
-           created = session['session_created']
-           if datetime.now() - created > timedelta(hours=1):
-               session.clear()
-   ```
-
-3. Add security headers:
-   ```python
-   @app.after_request
-   def add_security_headers(response):
-       response.headers['Strict-Transport-Security'] = 'max-age=31536000'
-       response.headers['Content-Security-Policy'] = "default-src 'self'"
-       return response
-   ```
-
-4. Implement proper session cleanup:
-   - Clear sessions on logout
-   - Implement server-side session tracking
-   - Add rate limiting for session creation
-
-### **6. Weak Password Storage**
-
-#### **Description**
-Passwords are stored in plaintext, exposing them to anyone with access to the server.
-
-#### **Steps to Replicate**
-1. Navigate to the Registration Page: `http://127.0.0.1:5000/register`
-2. Create a new user:
-   - Username: `testuser`
-   - Password: `mypassword`
-3. Compare storage methods:
-   
-   a. View plaintext passwords in `users.json`:
-   ```json
-   {
-       "testuser": "mypassword"
-   }
-   ```
-   
-   b. View hashed passwords in SQLite using check_db.py:
-   ```bash
-   python check_db.py
-   ```
-   Output shows secure vs insecure storage:
-   ```
-   Users in database:
-   ID: 1, Username: testuser, Password: scrypt:32768:8:1$...[hashed]...
-   ```
-
-#### **Why This Happens**
-- Passwords are saved directly without hashing in users.json
-- SQLite database uses proper password hashing
-- This dual storage demonstrates the contrast between secure and insecure practices
-
-#### **Security Impact**
-- users.json: Passwords are immediately readable by anyone with file access
-- users.db: Passwords are properly hashed and protected
-
-#### **Google Lighthouse Insights**
-- Flagged unencrypted HTTP connections, highlighting potential risks of transmitting plaintext passwords.
-
-#### **Recommendation**
-- Hash passwords before storing them:
-   ```python
-   from werkzeug.security import generate_password_hash
-   hashed_password = generate_password_hash(password)
-   ```
-
-### **7. Stored XSS**
-
-#### **Description**
-The application stores user input without sanitization, allowing malicious scripts to be executed.
-
-#### **Steps to Replicate**
-1. Navigate to the Comment Section: `http://127.0.0.1:5000/comments`
-2. Enter the following in the comment field:
+#### Test Steps:
+1. Log in to the application
+2. Create a new HTML file with this content:
    ```html
-   <script>alert('XSS Vulnerability!');</script>
+   <form id="csrf" action="http://localhost:5000/transfer" method="POST">
+       <input type="hidden" name="amount" value="1000">
+       <input type="hidden" name="to_user" value="attacker">
+   </form>
+   <script>document.getElementById('csrf').submit();</script>
    ```
-3. Submit the form.
+3. Open the HTML file in a browser
+4. Observe the unauthorized transfer
 
-#### **Expected Result**
-A browser popup displays the alert message "XSS Vulnerability!".
+### 8. Missing Security Headers
+#### Description
+Demonstrates security implications of missing HTTP headers.
 
-#### **Why This Happens**
-- User input is stored without sanitization.
-
-#### **Google Lighthouse Insights**
-- Missing Content-Security-Policy headers flagged.
-- Warned about the absence of X-XSS-Protection.
-
-#### **Recommendation**
-- Escape user input before storing it:
-   ```python
-   from markupsafe import escape
-   return f"Comment: {escape(comment)}"
-   ```
-
-### **8. Security Misconfiguration**
-
-#### **Description**
-The application lacks critical security headers, making it vulnerable to various attacks.
-
-#### **Steps to Check**
-1. Use browser developer tools
-2. Examine response headers
-3. Note missing or misconfigured headers:
-   - No Content-Security-Policy
+#### Test Steps:
+1. Use browser dev tools (F12)
+2. Go to Network tab
+3. Inspect response headers
+4. Notice specifically:
+   - Missing CSP headers
    - Weak X-Frame-Options
-   - Missing HSTS
+   - Missing security headers
 
-#### **Impact**
-- Clickjacking vulnerability
-- XSS exploitation easier
-- Man-in-the-middle attacks possible
+### 9. Insecure Design (A04)
+#### Description
+Demonstrates predictable resource locations and weak architecture design patterns.
 
-#### **Recommendation**
-```python
-@app.after_request
-def add_security_headers(response):
-    response.headers['Content-Security-Policy'] = "default-src 'self'"
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000'
-    return response
-```
-
-### **9. Insecure Design (A04)**
-
-#### **Description**
-The application's design allows for predictable resource locations and weak session management.
-
-#### **Steps to Replicate**
-1. Access the endpoint directly: `http://localhost:5000/user/1`
-2. Try different IDs: `/user/2`, `/user/3`, etc.
-3. Note that no authentication is required
-
-#### **Expected Result**
-- Direct access to user data
-- JSON response with user details
-- No authorization checks performed
-
-#### **Why This Happens**
-- No authentication check before accessing data
-- Direct exposure of database IDs
-- Missing access control checks
-
-#### **Recommendation**
-- Implement proper authentication
-- Use indirect references
-- Add authorization checks
-- Implement role-based access control
-
-### **10. Vulnerable Components (A06)**
-
-#### **Description**
-The application uses outdated dependencies with known vulnerabilities.
-
-#### **Steps to Check**
-1. Use dependency scanning tools
-2. Examine the application's dependencies
-3. Note outdated or vulnerable components:
-   - Outdated Flask version
-   - Vulnerable Werkzeug version
-
-#### **Impact**
-- Potential for exploitation of known vulnerabilities
-- Increased risk of security breaches
-
-#### **Recommendation**
-- Update dependencies to the latest versions:
-   ```bash
-   pip install --upgrade flask
-   pip install --upgrade werkzeug
+#### Test Steps:
+1. Files are stored in predictable locations:
    ```
-
-### **11. Security Logging Failures (A09)**
-
-#### **Description**
-The application fails to properly log security events, making it difficult to detect and respond to security incidents.
-
-#### **Demo Credentials**
-```
-Username: admin
-Password: admin123
-```
-This is a separate demo endpoint using hardcoded credentials specifically to demonstrate logging vulnerabilities. The main user authentication system uses the database and is demonstrated in other vulnerabilities.
-
-#### **Test Scenario 1: Sensitive Data Exposure in Logs**
-
-1. Open a terminal and start monitoring the application logs:
-   ```bash
-   type app.log
+   /uploads/file1.txt
+   /uploads/file2.txt
    ```
+2. No access control on downloads
+3. Sequential and predictable IDs
+4. Weak architectural security controls
 
-2. Go to the admin login form on the home page (under "11. Security Logging Failures")
-3. Submit these credentials:
-   - Username: `admin`
-   - Password: `admin123`
-4. Check the logs again:
-   ```bash
-   type app.log
-   ```
-   You should see sensitive information exposed:
-   ```
-   [ADMIN LOGIN] Attempt with credentials - Username: admin, Password: admin123
-   ```
+### 10. Vulnerable Components (A06)
+#### Description
+Application uses outdated dependencies with known vulnerabilities.
 
-**Security Impact**: Passwords and sensitive data are logged in plaintext, risking exposure through log files.
+#### Test Steps:
+1. Visit `/check_dependency` for vulnerability check
+2. Notable issues:
+   - Using requests v2.0.1 (known vulnerable)
+   - No dependency scanning
+   - Outdated components with CVEs
+3. Check the terminal output for detailed vulnerability information
 
-#### **Test Scenario 2: Missing Critical Event Logging**
+### 11. Security Logging Failures (A09)
+#### Description
+Demonstrates poor logging practices and missing audit trails.
 
-1. Try these login attempts:
-   - Correct credentials (admin/admin123)
-   - Wrong password (admin/wrongpass)
-   - Wrong username (notadmin/admin123)
-   - SQL injection attempt (admin' OR '1'='1)
+#### Test Credentials:
+- Username: `admin`
+- Password: `admin123`
 
-2. Check the logs. Notice that many critical security events are not logged:
-   - No IP addresses logged
-   - No timestamps on events
-   - No session IDs tracked
-   - No user agent information
-   - No success/failure status
-   - No rate limiting information
-
-**Security Impact**: Inability to detect and investigate security incidents.
-
-#### **Test Scenario 3: Insufficient Logging Detail**
-
-1. Try to perform a password reset for any user
-2. Check the logs and notice:
-   - No record of who initiated the reset
-   - No timestamp of the action
-   - No success/failure status
-
-**Security Impact**: Forensic investigation becomes impossible due to missing crucial details.
-
-#### **Test Scenario 4: No Log Protection**
-
-1. Locate the log file in the application directory
-2. Notice that:
-   - Logs are stored without encryption
-   - No log rotation implemented
-   - No access controls on log files
-   - No backup strategy
-
-**Security Impact**: Log tampering and deletion go undetected.
-
-#### **Test Scenario 5: Missing Audit Trail**
-
-1. As an admin user:
-   - Create a new user account
-   - Modify user permissions
-   - Delete a user
-
-2. Try to reconstruct the sequence of events from logs
-3. Notice that it's impossible to:
-   - Track who made what changes
-   - Determine the timing of changes
-   - See the previous vs new values
-
-**Security Impact**: No accountability for administrative actions.
-
-#### **Proper Implementation Would Include**
-
-1. **Structured Logging**:
-   ```python
-   logging.info({
-       "event": "login_attempt",
-       "username": username,
-       "ip": request.remote_addr,
-       "user_agent": request.user_agent.string,
-       "timestamp": datetime.utcnow().isoformat(),
-       "success": success
-   })
-   ```
-
-2. **Critical Events to Log**:
-   - Authentication events (success/failure)
-   - Authorization failures
-   - Input validation failures
-   - Application errors
-   - Security configuration changes
-   - Data access and modification
-
-3. **Log Protection**:
-   - Implement log rotation
-   - Use append-only logs
-   - Store logs securely
-   - Regular log backups
-   - Log integrity monitoring
-
-4. **Never Log**:
-   - Passwords (plain text or hashed)
-   - Session tokens
-   - API keys
-   - Sensitive personal data
-   - Banking/financial data
-
-#### **Mitigation Steps**
-
-1. Implement structured logging with proper formatting:
-   ```python
-   logging.basicConfig(
-       level=logging.INFO,
-       format='%(asctime)s - %(levelname)s - %(client_ip)s - %(message)s',
-       datefmt='%Y-%m-%d %H:%M:%S'
-   )
-   ```
-
-2. Use logging levels appropriately:
-   ```python
-   logging.info("User logged in successfully")  # Normal operations
-   logging.warning("Failed login attempt")      # Potential security events
-   logging.error("Authorization failure")       # Security incidents
-   ```
-
-3. Include contextual information:
-   ```python
-   extra = {
-       'client_ip': request.remote_addr,
-       'user_id': current_user.id,
-       'action': 'password_change'
-   }
-   logger.info("Password changed", extra=extra)
-   ```
-
-4. Implement secure log handling:
-   ```python
-   from logging.handlers import RotatingFileHandler
-   
-   handler = RotatingFileHandler(
-       'app.log',
-       maxBytes=10000000,  # 10MB
-       backupCount=5
-   )
-   ```
-
-#### **Testing Tools**
-
-- Log analysis tools (e.g., ELK Stack)
-- Log monitoring systems
-- SIEM solutions
-- File integrity monitoring tools
-
-### **12. SSRF Vulnerability (A10)**
-
-#### **Description**
-The application allows for Server-Side Request Forgery (SSRF) attacks, enabling an attacker to make unauthorized requests.
-
-#### **Steps to Replicate**
-1. Navigate to the SSRF Endpoint: `http://127.0.0.1:5000/ssrf`
-2. Enter a URL in the input field:
+#### Test Steps:
+1. Log in using demo credentials
+2. Check server logs - sensitive data exposed
+3. Notice missing audit trails
+4. Test using the insecure login form:
    ```html
-   http://localhost:5000/admin
-   ```
-3. Submit the form.
-
-#### **Expected Result**
-The application makes a request to the specified URL, potentially allowing access to sensitive data or systems.
-
-#### **Why This Happens**
-- The application does not validate or sanitize the input URL.
-
-#### **Recommendation**
-- Validate and sanitize the input URL:
-   ```python
-   from urllib.parse import urlparse
-   
-   def is_valid_url(url):
-       try:
-           result = urlparse(url)
-           return all([result.scheme, result.netloc])
-       except ValueError:
-           return False
+   <form action="/admin/login" method="POST">
+       <input type="text" name="username" placeholder="Username" required>
+       <input type="password" name="password" placeholder="Password" required>
+       <button type="submit">Test Insecure Login</button>
+   </form>
    ```
 
----
+**Note**: This is a separate demo endpoint using hardcoded credentials. The main authentication system uses the database and is demonstrated in other vulnerabilities.
 
-## **Summary of Tools and Testing Methodologies**
+### 12. SSRF Vulnerability (A10)
+#### Description
+Server-Side Request Forgery vulnerability allowing unauthorized access to internal resources.
 
-### **1. Testing Methodologies**
-- **Blackbox Testing**:
-  Simulated attacks without access to source code, using form inputs and browser interactions.
-- **Whitebox Testing**:
-  Reviewed the source code to identify vulnerabilities like raw SQL queries and unsanitized inputs.
-- **Greybox Testing**:
-  Combined knowledge of the codebase with manual tests to refine attacks.
+#### Test Steps:
+1. Access `/fetch-url` endpoint
+2. Use the provided form:
+   ```html
+   <form action="/fetch-url" method="POST">
+       <input type="text" name="url" placeholder="Enter URL to fetch" required>
+       <button type="submit">Fetch URL</button>
+   </form>
+   ```
+3. Try accessing internal resources:
+   ```
+   file:///etc/passwd
+   http://localhost:8080
+   ```
+4. Server will fetch URLs without proper validation
 
-### **2. Tools Used**
-- **Google Lighthouse**:
-  Identified missing security headers, outdated libraries, and unencrypted HTTP connections.
-- **Browser Developer Tools**:
-  Inspected requests, cookies, and DOM behavior to uncover vulnerabilities.
+## Security Testing Methodology
+- **Blackbox Testing**: Testing without knowledge of internal systems
+- **Whitebox Testing**: Testing with full access to source code
+- **Greybox Testing**: Combination of both approaches
+- **Google Lighthouse**: For PWA security audits
 
----
+## Important Notes
+1. This is an educational environment only
+2. All vulnerabilities are intentional
+3. Do not use these techniques on production systems
+4. Server logs all activities for learning purposes
 
-## **Recommendations**
+## Recommendations for Secure Implementation
+1. Input validation and sanitization
+2. Proper authentication and authorization
+3. Secure session management
+4. Implementation of security headers
+5. Regular security audits
+6. Proper error handling and logging
+7. Use of prepared statements for SQL
+8. Implementation of CSP headers
 
-### **Critical Fixes:**
-- Use parameterised queries to prevent SQL Injection.
-- Hash passwords before storing them.
-- Sanitize user input to prevent XSS.
+## OWASP Top 10:2021 Alignment
+### A01: Broken Access Control
+- IDOR in user endpoint
+- Missing access controls
 
-### **Intermediate Fixes:**
-- Add Content-Security-Policy and other headers to restrict script execution.
-- Enforce HTTPS using Flask-Talisman.
+### A02: Cryptographic Failures
+- Plaintext passwords
+- Weak storage methods
 
-### **Ongoing Practices:**
-- Regularly audit dependencies for vulnerabilities.
-- Perform routine penetration testing to ensure continued security.
+### A03: Injection
+- SQL Injection
+- XSS (Reflected & Stored)
+
+### A04: Insecure Design
+- Predictable IDs
+- Weak sessions
+
+### A05: Security Misconfiguration
+- Missing headers
+- Information exposure
+
+### A06: Vulnerable Components
+- Outdated dependencies
+- Known vulnerabilities
+
+### A07: Authentication Failures
+- Weak session management
+- No MFA
+
+### A08: Software Integrity Failures
+- CSRF vulnerability
+- No integrity checks
+
+### A09: Logging Failures
+- Basic logging only
+- No audit trail
+
+### A10: SSRF
+- Unrestricted file access
+- No URL validation
+
+## Important Note
+This is an educational demo. All vulnerabilities are intentional. Do not use in production.
