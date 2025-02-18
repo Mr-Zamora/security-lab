@@ -118,24 +118,119 @@ API endpoint vulnerable to unauthorized access and XSS through JSON data.
 }
 ```
 
-### 5. Unprotected Sessions
-#### Description
-Demonstrates weak session management and hijacking vulnerabilities.
+### **5. Unprotected Sessions**
 
-#### Vulnerabilities:
-- Sessions accessible via JavaScript (no HttpOnly flag)
-- Sessions work over HTTP (no Secure flag)
-- No SameSite cookie protection
-- Extended session duration (365 days)
-- No session rotation
-- Improper session invalidation
+#### **Description**
+The application uses insecure session management that can be exploited through session hijacking and persistence attacks. Sessions are configured with weak security settings and expose sensitive data.
 
-#### Test Steps:
-1. Go to `/report` page
-2. Open DevTools (F12)
-3. Check Console for exposed session data
-4. Close browser and reopen - session persists
+#### **Vulnerabilities Found**
+1. Sessions accessible via JavaScript (no HttpOnly flag)
+2. Sessions work over HTTP (no Secure flag)
+3. No SameSite cookie protection
+4. Extremely long session duration (365 days)
+5. No session rotation on login
+6. No proper session invalidation
 
+#### **Steps to Replicate**
+
+##### Method 1: Session Inspection and Hijacking
+1. First, log in to the application:
+   - Go to `http://127.0.0.1:5000/login`
+   - Use SQL injection to login:
+     - Username: `admin' OR '1'='1`
+     - Password: (any value)
+
+2. Navigate to the Report Page: `http://127.0.0.1:5000/report`
+
+3. Open Browser DevTools (F12) and in Console, execute either:
+   ```javascript
+   // View all cookies
+   console.log(document.cookie)
+
+   // Or for better readability, use:
+   document.cookie.split(';').forEach(cookie => console.log(cookie.trim()))
+   ```
+
+4. Note that session cookie is accessible via JavaScript, which makes it vulnerable to XSS attacks
+
+**Important**: You must run these commands while on a page from the Flask application (like `/report` or `/login`). The commands won't work if you try them on a different domain or local file.
+
+##### Method 2: Session Persistence Test
+1. Log in using the steps from Method 1
+2. Note your session cookie value using the console commands above
+3. Close your browser completely
+4. Open a new browser window
+5. Go to `http://127.0.0.1:5000/report`
+6. You should still be logged in
+7. Check that the session cookie value remains the same
+
+##### Method 3: Cross-Site Testing
+1. While logged in, open the browser console (F12)
+2. Execute this cross-origin request:
+   ```javascript
+   fetch('http://127.0.0.1:5000/api/data', {
+       credentials: 'include'  // This will send cookies
+   }).then(r => r.json()).then(console.log)
+   ```
+3. Note that the request succeeds due to missing SameSite protection
+
+#### **Vulnerable Configuration**
+From app.py:
+```python
+# Session Configuration (Intentionally Vulnerable)
+app.permanent_session_lifetime = timedelta(days=365)  # Extremely long session
+app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP (not HTTPS only)
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access
+app.config['SESSION_COOKIE_SAMESITE'] = None  # Allow cross-site requests
+```
+
+#### **Impact**
+1. **Session Hijacking**: Attackers can steal session cookies through XSS or malicious JavaScript
+2. **Persistence Abuse**: Sessions remain valid for extremely long periods
+3. **Cross-Site Attacks**: Missing SameSite protection enables CSRF attacks
+4. **Man-in-the-Middle**: Non-secure cookies can be intercepted over HTTP
+
+#### **Recommendation**
+1. Implement secure session configuration:
+   ```python
+   # Secure Configuration
+   app.config.update(
+       SESSION_COOKIE_SECURE=True,        # HTTPS only
+       SESSION_COOKIE_HTTPONLY=True,      # No JavaScript access
+       SESSION_COOKIE_SAMESITE='Strict',  # Prevent CSRF
+       PERMANENT_SESSION_LIFETIME=timedelta(hours=1)  # Short lifetime
+   )
+   ```
+
+2. Implement session security measures:
+   ```python
+   @app.before_request
+   def secure_session():
+       # Rotate session ID on login
+       if 'user_id' in session and 'session_created' not in session:
+           session.regenerate()
+           session['session_created'] = datetime.now()
+       
+       # Expire old sessions
+       if 'session_created' in session:
+           created = session['session_created']
+           if datetime.now() - created > timedelta(hours=1):
+               session.clear()
+   ```
+
+3. Add security headers:
+   ```python
+   @app.after_request
+   def add_security_headers(response):
+       response.headers['Strict-Transport-Security'] = 'max-age=31536000'
+       response.headers['Content-Security-Policy'] = "default-src 'self'"
+       return response
+   ```
+
+4. Implement proper session cleanup:
+   - Clear sessions on logout
+   - Implement server-side session tracking
+   - Add rate limiting for session creation
 ### 6. IDOR (Insecure Direct Object Reference)
 #### Description
 Demonstrates unauthorized access to user data.
